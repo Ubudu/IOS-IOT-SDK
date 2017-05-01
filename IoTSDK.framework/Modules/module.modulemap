@@ -1,0 +1,10 @@
+framework module IoTSDK {
+  umbrella header "IoTSDK.h"
+
+  export *
+  module * { export * }
+}
+
+module IoTSDK.Swift {
+    header "IoTSDK-Swift.h"
+}
