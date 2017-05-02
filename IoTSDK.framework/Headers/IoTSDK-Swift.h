@@ -140,13 +140,14 @@ typedef unsigned int swift_uint4  __attribute__((__ext_vector_type__(4)));
 #pragma clang diagnostic ignored "-Wproperty-attribute-mismatch"
 #pragma clang diagnostic ignored "-Wduplicate-method-arg"
 @protocol ConnectionManagerDelegate;
+@protocol DongleFilter;
 @class CBCentralManager;
 @class CBPeripheral;
 @class NSNumber;
 
 SWIFT_CLASS("_TtC6IoTSDK17ConnectionManager")
-@interface ConnectionManager : NSObject <CBPeripheralDelegate, CBCentralManagerDelegate>
-- (nonnull instancetype)initWithDelegate:(id <ConnectionManagerDelegate> _Nonnull)delegate OBJC_DESIGNATED_INITIALIZER;
+@interface ConnectionManager : NSObject <CBCentralManagerDelegate, CBPeripheralDelegate>
+- (nonnull instancetype)initWithDelegate:(id <ConnectionManagerDelegate> _Nonnull)delegate filter:(id <DongleFilter> _Nonnull)filter OBJC_DESIGNATED_INITIALIZER;
 - (void)connect;
 - (void)disconnect;
 - (void)centralManagerDidUpdateState:(CBCentralManager * _Nonnull)central;
@@ -164,6 +165,19 @@ SWIFT_PROTOCOL("_TtP6IoTSDK25ConnectionManagerDelegate_")
 - (void)didConnectWithSender:(ConnectionManager * _Nonnull)sender toDongle:(Dongle * _Nonnull)dongle;
 - (void)didFailToConnectWithSender:(ConnectionManager * _Nonnull)sender withError:(NSError * _Nullable)error;
 - (void)didDisconnectWithSender:(ConnectionManager * _Nonnull)sender fromDongle:(Dongle * _Nonnull)dongle;
+@end
+
+
+SWIFT_PROTOCOL("_TtP6IoTSDK12DongleFilter_")
+@protocol DongleFilter
+- (BOOL)isCorrectWithPeripheral:(CBPeripheral * _Nonnull)peripheral SWIFT_WARN_UNUSED_RESULT;
+@end
+
+
+SWIFT_CLASS("_TtC6IoTSDK19DefaultDongleFilter")
+@interface DefaultDongleFilter : NSObject <DongleFilter>
+- (BOOL)isCorrectWithPeripheral:(CBPeripheral * _Nonnull)peripheral SWIFT_WARN_UNUSED_RESULT;
+- (nonnull instancetype)init OBJC_DESIGNATED_INITIALIZER;
 @end
 
 @protocol DongleDelegate;
@@ -193,5 +207,6 @@ SWIFT_PROTOCOL("_TtP6IoTSDK14DongleDelegate_")
 - (void)didSendDataWithData:(NSData * _Nullable)data;
 - (void)didReceiveErrorWithError:(NSError * _Nullable)error;
 @end
+
 
 #pragma clang diagnostic pop
