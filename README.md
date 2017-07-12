@@ -8,52 +8,62 @@ This SDK is dedicated to handling connection + bidirectional communication with 
 
 ## How to use?
 
-### Connection
-
-An instance of `ConnectionManager` is required to try to connect to a dongle.
-
-When creating the ConnectionManager, you need to pass the object that will act as the `ConnectionManagerDelegate` and receive callbacks when a connection is successfully established or when it fails.
-
-You can also pass an instance of `DongleFilter` to the `ConnectionManager` in order to influence the dongle which will be used.
-
-When calling the `connect` method, the iPhone will try to find nearby connectable devices and connect to the first dongle which matches the filter. It eventually call one of the two callbacks of the `ConnectionManagerDelegate`:
+To find dongles use a static function `discover` on from Discover class.
 
 ```
-func didConnect(sender: ConnectionManager, toDongle dongle: Dongle)
+static public func discover(forTime discoverTimeout: TimeInterval = 0.0,
+                                withFilter filter: BLEDeviceFilter?,
+                                _ discoveryHandler: @escaping DiscoveryHandler = { _, _ in }) 
 ```
 
-or
+This function call `discoveryHandler` each time it finds a Device which passes `BLEDeviceFilter` or when error occurs.
+
+On th `device` there is a possibility to `connect`, `disconnect`, `send` some data to the connected device or register for notifications from already connected device by setting `ReceiveingDataHandler`.
+
+### Sample code
 
 ```
-func didFailToConnect(sender: ConnectionManager, withError error: Error?)
+        Discovery.discover(withFilter: self) { device, error in
+            // Print discovered device
+            print("discover device: \(String(describing: device)) error: \(String(describing: error))")
+            
+            // Stop scanning immediately after finding a 1 device
+            Discovery.stopDiscovering()
+            
+            // Connect to the device
+            device?.connect() { error in
+                
+                guard error == nil else {
+                    // Handle connection error
+                    print("connection failed: \(String(describing: error?.localizedDescription))")
+                    return
+                }
+                
+                // Print tha we are already connected.
+                print("connected with error: \(String(describing: error))")
+                
+                // Register for receiveing a notifications from the device
+                device.receiveingDataHandler = { data, error in
+                    guard let data = data else {
+                        print("receiveing data handler error: \(String(describing: error))")
+                        return
+                    }
+                    let message = String(data: data, encoding: String.Encoding.utf8)
+                    print("receive data in string: \(String(describing: message)), error: \ (String(describing: error))")
+                }
+                
+                // Send some data
+                self.device?.send(data: data!) { data, error in
+                    guard let data = data else {
+                        print ("Sending data error")
+                        return
+                    }
+                    
+                    guard let dataString = String(data: data, encoding: String.Encoding.ascii) else { return }
+                    
+                    print("data (\(dataString)) sent with error: \(String(describing: error)))")
+                }
+
+            }
+        }
 ```
-
-### Communication
-
-After the successful connection, it is possible to send some data in both directions between the iPhone and the dongle by using:
-
-```
-public func send(data: Data)
-```
-
-And by implementing `DongleDelegate` protocol which will be notified of communication events via the following callbacks:
-
-```
-func didReceiveData(data: Data?)
-```
-
-This method is called after receiveing data from the dongle.
-
-```
-func didSendData(data: Data?)
-```
-
-This method is called after sending data to the dongle.
-
-```
-func didReceiveError(error: Error?)
-```
-
-This method is called if some error occured while receiveing data from the dongle.
-
-

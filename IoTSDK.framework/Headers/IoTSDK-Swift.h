@@ -133,66 +133,32 @@ typedef unsigned int swift_uint4  __attribute__((__ext_vector_type__(4)));
 #endif
 #if defined(__has_feature) && __has_feature(modules)
 @import ObjectiveC;
-@import CoreBluetooth;
 @import Foundation;
+@import CoreBluetooth;
 #endif
 
 #pragma clang diagnostic ignored "-Wproperty-attribute-mismatch"
 #pragma clang diagnostic ignored "-Wduplicate-method-arg"
-@protocol ConnectionManagerDelegate;
-@protocol DongleFilter;
-@class CBCentralManager;
 @class CBPeripheral;
-@class NSNumber;
 
-SWIFT_CLASS("_TtC6IoTSDK17ConnectionManager")
-@interface ConnectionManager : NSObject <CBCentralManagerDelegate, CBPeripheralDelegate>
-- (nonnull instancetype)initWithDelegate:(id <ConnectionManagerDelegate> _Nonnull)delegate filter:(id <DongleFilter> _Nonnull)filter OBJC_DESIGNATED_INITIALIZER;
-- (void)connect;
-- (void)disconnect;
-- (void)centralManagerDidUpdateState:(CBCentralManager * _Nonnull)central;
-- (void)centralManager:(CBCentralManager * _Nonnull)central didDiscoverPeripheral:(CBPeripheral * _Nonnull)peripheral advertisementData:(NSDictionary<NSString *, id> * _Nonnull)advertisementData RSSI:(NSNumber * _Nonnull)RSSI;
-- (void)centralManager:(CBCentralManager * _Nonnull)central didConnectPeripheral:(CBPeripheral * _Nonnull)peripheral;
-- (void)centralManager:(CBCentralManager * _Nonnull)central didFailToConnectPeripheral:(CBPeripheral * _Nonnull)peripheral error:(NSError * _Nullable)error;
-- (void)centralManager:(CBCentralManager * _Nonnull)central didDisconnectPeripheral:(CBPeripheral * _Nonnull)peripheral error:(NSError * _Nullable)error;
-- (nonnull instancetype)init SWIFT_UNAVAILABLE;
-@end
-
-@class Dongle;
-
-SWIFT_PROTOCOL("_TtP6IoTSDK25ConnectionManagerDelegate_")
-@protocol ConnectionManagerDelegate
-- (void)didConnectWithSender:(ConnectionManager * _Nonnull)sender toDongle:(Dongle * _Nonnull)dongle;
-- (void)didFailToConnectWithSender:(ConnectionManager * _Nonnull)sender withError:(NSError * _Nullable)error;
-- (void)didDisconnectWithSender:(ConnectionManager * _Nonnull)sender fromDongle:(Dongle * _Nonnull)dongle;
-@end
-
-
-SWIFT_PROTOCOL("_TtP6IoTSDK12DongleFilter_")
-@protocol DongleFilter
-- (BOOL)isCorrectWithPeripheral:(CBPeripheral * _Nonnull)peripheral SWIFT_WARN_UNUSED_RESULT;
-@end
-
-
-SWIFT_CLASS("_TtC6IoTSDK19DefaultDongleFilter")
-@interface DefaultDongleFilter : NSObject <DongleFilter>
-- (BOOL)isCorrectWithPeripheral:(CBPeripheral * _Nonnull)peripheral SWIFT_WARN_UNUSED_RESULT;
-- (nonnull instancetype)init OBJC_DESIGNATED_INITIALIZER;
-@end
-
-@protocol DongleDelegate;
-
-SWIFT_CLASS("_TtC6IoTSDK6Dongle")
-@interface Dongle : NSObject
-@property (nonatomic, strong) id <DongleDelegate> _Null_unspecified delegate;
-- (void)sendWithData:(NSData * _Nonnull)data;
+SWIFT_CLASS("_TtC6IoTSDK9BLEDevice")
+@interface BLEDevice : NSObject
+@property (nonatomic, strong) CBPeripheral * _Nonnull peripheral;
+@property (nonatomic, copy) NSDictionary<NSString *, id> * _Nonnull advertisementData;
+@property (nonatomic) NSInteger rssi;
+@property (nonatomic, readonly, copy) NSUUID * _Nonnull identifier;
+@property (nonatomic, copy) void (^ _Nullable receiveingDataHandler)(NSData * _Nullable, NSError * _Nullable);
+- (nonnull instancetype)initWithPeripheral:(CBPeripheral * _Nonnull)peripheral OBJC_DESIGNATED_INITIALIZER;
+- (void)connect:(void (^ _Nonnull)(NSError * _Nullable))completion;
+- (void)disconnect:(void (^ _Nonnull)(NSError * _Nullable))completion;
+- (void)sendWithData:(NSData * _Nonnull)data :(void (^ _Nonnull)(NSData * _Nullable, NSError * _Nullable))completion;
 - (nonnull instancetype)init SWIFT_UNAVAILABLE;
 @end
 
 @class CBService;
 @class CBCharacteristic;
 
-@interface Dongle (SWIFT_EXTENSION(IoTSDK)) <CBPeripheralDelegate>
+@interface BLEDevice (SWIFT_EXTENSION(IoTSDK)) <CBPeripheralDelegate>
 - (void)peripheral:(CBPeripheral * _Nonnull)peripheral didDiscoverServices:(NSError * _Nullable)error;
 - (void)peripheral:(CBPeripheral * _Nonnull)peripheral didDiscoverCharacteristicsForService:(CBService * _Nonnull)service error:(NSError * _Nullable)error;
 - (void)peripheral:(CBPeripheral * _Nonnull)peripheral didUpdateNotificationStateForCharacteristic:(CBCharacteristic * _Nonnull)characteristic error:(NSError * _Nullable)error;
@@ -201,12 +167,35 @@ SWIFT_CLASS("_TtC6IoTSDK6Dongle")
 @end
 
 
-SWIFT_PROTOCOL("_TtP6IoTSDK14DongleDelegate_")
-@protocol DongleDelegate
-- (void)didReceiveDataWithData:(NSData * _Nullable)data;
-- (void)didSendDataWithData:(NSData * _Nullable)data;
-- (void)didReceiveErrorWithError:(NSError * _Nullable)error;
+SWIFT_PROTOCOL("_TtP6IoTSDK15BLEDeviceFilter_")
+@protocol BLEDeviceFilter
+- (BOOL)isCorrectWithScannedDevice:(BLEDevice * _Nonnull)device SWIFT_WARN_UNUSED_RESULT;
 @end
 
+
+SWIFT_CLASS("_TtC6IoTSDK19DefaultDeviceFilter")
+@interface DefaultDeviceFilter : NSObject <BLEDeviceFilter>
+- (BOOL)isCorrectWithScannedDevice:(BLEDevice * _Nonnull)device SWIFT_WARN_UNUSED_RESULT;
+- (nonnull instancetype)init OBJC_DESIGNATED_INITIALIZER;
+@end
+
+
+SWIFT_CLASS("_TtC6IoTSDK9Discovery")
+@interface Discovery : NSObject
+- (nonnull instancetype)init SWIFT_UNAVAILABLE;
++ (void)stopDiscovering;
++ (BOOL)isScanning SWIFT_WARN_UNUSED_RESULT;
+@end
+
+@class CBCentralManager;
+@class NSNumber;
+
+@interface Discovery (SWIFT_EXTENSION(IoTSDK)) <CBCentralManagerDelegate>
+- (void)centralManagerDidUpdateState:(CBCentralManager * _Nonnull)central;
+- (void)centralManager:(CBCentralManager * _Nonnull)central didDiscoverPeripheral:(CBPeripheral * _Nonnull)peripheral advertisementData:(NSDictionary<NSString *, id> * _Nonnull)advertisementData RSSI:(NSNumber * _Nonnull)RSSI;
+- (void)centralManager:(CBCentralManager * _Nonnull)central didConnectPeripheral:(CBPeripheral * _Nonnull)peripheral;
+- (void)centralManager:(CBCentralManager * _Nonnull)central didFailToConnectPeripheral:(CBPeripheral * _Nonnull)peripheral error:(NSError * _Nullable)error;
+- (void)centralManager:(CBCentralManager * _Nonnull)central didDisconnectPeripheral:(CBPeripheral * _Nonnull)peripheral error:(NSError * _Nullable)error;
+@end
 
 #pragma clang diagnostic pop
