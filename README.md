@@ -1,5 +1,9 @@
 # IOS-IOT-SDK
-This SDK is dedicated to handling connection + bidirectional communication with the `ub_ble_scanner` device.
+This SDK is dedicated to handling connection + bidirectional communication with the bluetooth LE devices.
+
+## Requirements
+- Xcode 10+
+- Swift 4.2+
 
 ## Installing
 - Add `IoTSDK.framework` to your project.
@@ -7,63 +11,33 @@ This SDK is dedicated to handling connection + bidirectional communication with 
 - Add `IoTSDK.framework` to `Linked Frameworks and Libraries`
 
 ## How to use?
+Before using IOT SDK it is good to set a reusable identifier for the SDK:
 
-To find dongles use a static function `discover` on from Discover class.
+`IOTSDK.setSharedInstance(with: "com.company.someIdentier")`
+
+To find dongles use a static function `scan` from IOTSDK.
 
 ```
-static public func discover(forTime discoverTimeout: TimeInterval = 0.0,
-                                withFilter filter: BLEDeviceFilter?,
-                                _ discoveryHandler: @escaping DiscoveryHandler = { _, _ in }) 
+IOTSDK.scan { scanResult in
+	switch (scanResult) {
+		case .scanStarted:
+			NSLog("IoTSDK scan started")
+		case .scanResult(peripheral: let peripheral, advertisementData: let advertisementData, RSSI: let rssi):
+			NSLog("IoTSDK scan result: \(peripheral), advertisement data: \(advertisementData), RSSI: \(rssi)")
+		case .scanStopped(error: let error):
+			NSLog("IoTSDK scan stopped with error: \(error ?? nil)")
+    }
+}
 ```
 
-This function call `discoveryHandler` each time it finds a Device which passes `BLEDeviceFilter` or when error occurs.
+This function call `scanResult` each time it finds a Device or when error occurs.
 
-On th `device` there is a possibility to `connect`, `disconnect`, `send` some data to the connected device or register for notifications from already connected device by setting `ReceiveingDataHandler`.
+IOT SDK provides a possibility to `connect`, `disconnect`, `send` some data to the connected device.
 
 ### Sample code
 
 ```
-        Discovery.discover(withFilter: self) { device, error in
-            // Print discovered device
-            print("discover device: \(String(describing: device)) error: \(String(describing: error))")
-            
-            // Stop scanning immediately after finding a 1 device
-            Discovery.stopDiscovering()
-            
-            // Connect to the device
-            device?.connect() { error in
-                
-                guard error == nil else {
-                    // Handle connection error
-                    print("connection failed: \(String(describing: error?.localizedDescription))")
-                    return
-                }
-                
-                // Print tha we are already connected.
-                print("connected with error: \(String(describing: error))")
-                
-                // Register for receiveing a notifications from the device
-                device.receiveingDataHandler = { data, error in
-                    guard let data = data else {
-                        print("receiveing data handler error: \(String(describing: error))")
-                        return
-                    }
-                    let message = String(data: data, encoding: String.Encoding.utf8)
-                    print("receive data in string: \(String(describing: message)), error: \ (String(describing: error))")
-                }
-                
-                // Send some data
-                self.device?.send(data: data!) { data, error in
-                    guard let data = data else {
-                        print ("Sending data error")
-                        return
-                    }
-                    
-                    guard let dataString = String(data: data, encoding: String.Encoding.ascii) else { return }
-                    
-                    print("data (\(dataString)) sent with error: \(String(describing: error)))")
-                }
-
-            }
-        }
+IOTSDK.connect(peripheral, completion: { connectionResult in
+	guard connectionResult.isSuccess == true else { /* handle error */ return }
+}
 ```
