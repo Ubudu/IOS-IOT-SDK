@@ -7,4 +7,5 @@ framework module IoTSDK {
 
 module IoTSDK.Swift {
     header "IoTSDK-Swift.h"
+    requires objc
 }
